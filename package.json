@@ -1,6 +1,6 @@
 {
-  "name": "react-h5-audio-player",
-  "version": "2.0.1",
+  "name": "react-h5-audio-player-bonobo",
+  "version": "0.0.9",
   "description": "A React audio player with UI. Mobile compatible.",
   "main": "./lib/index.js",
   "scripts": {

@@ -53,6 +53,8 @@ class H5AudioPlayer extends Component {
      * HTML5 Audio tag src property
      */
     src: PropTypes.string,
+    startTime: PropTypes.number,
+    endTime: PropTypes.number,
     title: PropTypes.string,
     volume: PropTypes.number,
     showLoopControl: PropTypes.bool,
@@ -72,6 +74,8 @@ class H5AudioPlayer extends Component {
     preload: 'auto',
     progressUpdateInterval: 20,
     src: '',
+    startTime: 0,
+    endTime: 0,
     volume: 1.0,
     className: '',
     showLoopControl: true,
@@ -112,7 +116,11 @@ class H5AudioPlayer extends Component {
 
   updateDisplayTime = (currentTime) => {
     const duration = this.audio.duration
-    const left = `${(currentTime / duration * 100).toFixed(2)}%` || 0
+    let left = `${(currentTime / duration * 100).toFixed(2)}%` || 0
+
+    if(this.props.endTime != 0) {
+      left = `${((currentTime - this.props.startTime) / (this.props.endTime - this.props.startTime) * 100).toFixed(2)}%` || 0
+    }
     this.setState({
       currentTime,
       duration,
@@ -298,7 +306,10 @@ class H5AudioPlayer extends Component {
     } else if (relativePos > maxRelativePos) {
       relativePos = maxRelativePos
     }
-    const currentTime = (this.audio.duration * relativePos) / maxRelativePos
+    let currentTime = (this.audio.duration * relativePos) / maxRelativePos
+    if(this.props.endTime != 0) {
+      currentTime = this.props.startTime + ((this.props.endTime - this.props.startTime) * relativePos/maxRelativePos)
+    }
     return { currentTime, currentTimePos: `${(relativePos / maxRelativePos * 100).toFixed(2)}%` }
   }
 
@@ -489,7 +500,7 @@ class H5AudioPlayer extends Component {
         </audio>
         <div className="rhap_progress-section">
           <div id="rhap_current-time" className="rhap_time rhap_current-time">
-            {this.getDisplayTimeBySeconds(currentTime)}
+            {this.props.endTime === 0 && this.getDisplayTimeBySeconds(currentTime) || this.getDisplayTimeBySeconds(currentTime - this.props.startTime)}
           </div>
           <div
             className="rhap_progress-container"
@@ -514,7 +525,7 @@ class H5AudioPlayer extends Component {
             </div>
           </div>
           <div className="rhap_time rhap_total-time">
-            {this.getDisplayTimeBySeconds(duration)}
+            {this.props.endTime === 0 && this.getDisplayTimeBySeconds(duration) || this.getDisplayTimeBySeconds(this.props.endTime - this.props.startTime)}
           </div>
         </div>
 
