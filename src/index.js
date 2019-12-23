@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Icon } from '@iconify/react'
 import playCircle from '@iconify/icons-mdi/play-circle'
 import pauseCircle from '@iconify/icons-mdi/pause-circle'
+import { WaveSpinner } from 'react-spinners-kit'
 import skipPrevious from '@iconify/icons-mdi/skip-previous'
 import skipNext from '@iconify/icons-mdi/skip-next'
 import fastForward from '@iconify/icons-mdi/fast-forward'
@@ -109,6 +110,7 @@ class H5AudioPlayer extends Component {
     isDraggingProgress: false,
     isDraggingVolume: false,
     isPlaying: false,
+    isLoading: false,
     isLoopEnabled: this.props.loop,
   }
 
@@ -139,12 +141,15 @@ class H5AudioPlayer extends Component {
   togglePlay = (e) => {
     e.stopPropagation()
     if (this.audio.paused && this.audio.src) {
-      const audioPromise = this.audio.play()
-      audioPromise.then(null)
-        .catch((err) => {
-          const { onPlayError } = this.props
-          onPlayError && onPlayError(new Error(err))
-        })
+      this.setState({isLoading: true}, () => {
+        const audioPromise = this.audio.play()
+        audioPromise.then(() => this.setState({isLoading: false}))
+          .catch((err) => {
+            const { onPlayError } = this.props
+            onPlayError && onPlayError(new Error(err))
+          })
+      })
+
     } else if (!this.audio.paused) {
       this.audio.pause()
     }
@@ -432,10 +437,24 @@ class H5AudioPlayer extends Component {
     })
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     const { src, autoPlay } = this.props
-    if (src !== prevProps.src && autoPlay) {
-      this.audio.play()
+    if (src !== prevProps.src) {
+      this.setState({
+        currentTime: this.props.startTime,
+        currentTimePos: '0%',
+      })
+      if(autoPlay || prevState.isPlaying)
+        {
+          this.setState({isLoading: true}, () => {
+            const audioPromise = this.audio.play()
+            audioPromise.then(() => this.setState({isLoading: false}))
+              .catch((err) => {
+                const { onPlayError } = this.props
+                onPlayError && onPlayError(new Error(err))
+              })
+          })
+        }
     }
   }
 
@@ -467,6 +486,7 @@ class H5AudioPlayer extends Component {
       duration,
       isPlaying,
       isLoopEnabled,
+      isLoading
     } = this.state
 
     return (
@@ -550,8 +570,9 @@ class H5AudioPlayer extends Component {
             )}
             <button aria-label={isPlaying ? 'Pause' : 'Play'} className="rhap_button-clear rhap_main-controls-button rhap_play-pause-button" onClick={this.togglePlay}>
               {isPlaying ? (
+                isLoading ? (<WaveSpinner size={15} color='#888' />) : (
                 <Icon icon={pauseCircle} />
-              ) : (
+              )) : (
                 <Icon icon={playCircle} />
               )}
             </button>
