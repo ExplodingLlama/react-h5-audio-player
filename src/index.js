@@ -1,17 +1,17 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
-import { Icon } from '@iconify/react'
-import playCircle from '@iconify/icons-mdi/play-circle'
-import pauseCircle from '@iconify/icons-mdi/pause-circle'
-import { WaveSpinner } from 'react-spinners-kit'
-import skipPrevious from '@iconify/icons-mdi/skip-previous'
-import skipNext from '@iconify/icons-mdi/skip-next'
-import fastForward from '@iconify/icons-mdi/fast-forward'
-import rewind from '@iconify/icons-mdi/rewind'
-import volumeHigh from '@iconify/icons-mdi/volume-high'
-import volumeMute from '@iconify/icons-mdi/volume-mute'
-import repeat from '@iconify/icons-mdi/repeat'
-import repeatOff from '@iconify/icons-mdi/repeat-off'
+import React, { Component } from "react";
+import PropTypes from "prop-types";
+import { Icon } from "@iconify/react";
+import playCircle from "@iconify/icons-mdi/play-circle";
+import pauseCircle from "@iconify/icons-mdi/pause-circle";
+import { WaveSpinner } from "react-spinners-kit";
+import skipPrevious from "@iconify/icons-mdi/skip-previous";
+import skipNext from "@iconify/icons-mdi/skip-next";
+import fastForward from "@iconify/icons-mdi/fast-forward";
+import rewind from "@iconify/icons-mdi/rewind";
+import volumeHigh from "@iconify/icons-mdi/volume-high";
+import volumeMute from "@iconify/icons-mdi/volume-mute";
+import repeat from "@iconify/icons-mdi/repeat";
+import repeatOff from "@iconify/icons-mdi/repeat-off";
 
 class H5AudioPlayer extends Component {
   static propTypes = {
@@ -45,7 +45,7 @@ class H5AudioPlayer extends Component {
     /**
      * HTML5 Audio tag preload property
      */
-    preload: PropTypes.oneOf(['auto', 'metadata', 'none']),
+    preload: PropTypes.oneOf(["auto", "metadata", "none"]),
     /**
      * Pregress indicator refresh interval
      */
@@ -62,23 +62,23 @@ class H5AudioPlayer extends Component {
     showVolumeControl: PropTypes.bool,
     showJumpControls: PropTypes.bool,
     showSkipControls: PropTypes.bool,
-    children: PropTypes.node,
-  }
+    children: PropTypes.node
+  };
 
   static defaultProps = {
     autoPlay: false,
     listenInterval: 1000,
     progressJumpStep: 5000,
-    volumeJumpStep: .1,
+    volumeJumpStep: 0.1,
     loop: false,
     muted: false,
-    preload: 'auto',
+    preload: "auto",
     progressUpdateInterval: 20,
-    src: '',
+    src: "",
     startTime: 0,
     endTime: 0,
     volume: 1.0,
-    className: '',
+    className: "",
     showLoopControl: true,
     showVolumeControl: true,
     showJumpControls: true,
@@ -86,380 +86,423 @@ class H5AudioPlayer extends Component {
     onClickPrevious: null,
     onClickNext: null,
     onPlayError: null,
-    children: null,
-  }
+    children: null
+  };
 
-  static addHeadingZero = num => (num > 9 ? num.toString() : `0${num}`)
+  static addHeadingZero = num => (num > 9 ? num.toString() : `0${num}`);
 
   static getPosX = (event, isTouch) => {
-    let posX
+    let posX;
     if (isTouch) {
-      posX = event.touches[0].pageX
+      posX = event.touches[0].pageX;
     } else {
-      posX = event.pageX || event.clientX
+      posX = event.pageX || event.clientX;
     }
-    return posX
-  }
+    return posX;
+  };
 
   state = {
     duration: NaN,
     currentTime: NaN,
-    currentTimePos: '0%',
+    currentTimePos: "0%",
     currentVolume: this.props.muted ? 0 : this.props.volume,
-    currentVolumePos: this.props.muted ? '0%' : `${this.props.volume * 100}%`,
+    currentVolumePos: this.props.muted ? "0%" : `${this.props.volume * 100}%`,
     isDraggingProgress: false,
     isDraggingVolume: false,
     isPlaying: false,
     isLoading: false,
-    isLoopEnabled: this.props.loop,
-  }
+    isLoopEnabled: this.props.loop
+  };
 
-  timeOnMouseMove = 0
+  timeOnMouseMove = 0;
 
-  updateDisplayTime = (currentTime) => {
-    const duration = this.audio.duration
-    let left = `${(currentTime / duration * 100).toFixed(2)}%` || 0
+  updateDisplayTime = currentTime => {
+    const duration = this.audio.duration;
+    let left = `${((currentTime / duration) * 100).toFixed(2)}%` || 0;
 
-    if(this.props.endTime != 0) {
-      left = `${((currentTime - this.props.startTime) / (this.props.endTime - this.props.startTime) * 100).toFixed(2)}%` || 0
+    if (this.props.endTime != 0) {
+      left =
+        `${(
+          ((currentTime - this.props.startTime) /
+            (this.props.endTime - this.props.startTime)) *
+          100
+        ).toFixed(2)}%` || 0;
     }
     this.setState({
       currentTime,
       duration,
-      currentTimePos: left,
-    })
-  }
+      currentTimePos: left
+    });
+  };
 
-  updateDisplayVolume = (volume) => {
+  updateDisplayVolume = volume => {
     if (volume === 0) {
-      return this.setState({ currentVolume: 0, currentVolumePos: '0%' })
+      return this.setState({ currentVolume: 0, currentVolumePos: "0%" });
     }
 
-    this.setState({ currentVolume: volume, currentVolumePos: `${(volume * 100).toFixed(0)}%` })
-  }
+    this.setState({
+      currentVolume: volume,
+      currentVolumePos: `${(volume * 100).toFixed(0)}%`
+    });
+  };
 
-  togglePlay = (e) => {
-    e.stopPropagation()
+  togglePlay = e => {
+    e.stopPropagation();
     if (this.audio.paused && this.audio.src) {
-      this.setState({isLoading: true}, () => {
-        const audioPromise = this.audio.play()
-        audioPromise.then(() => this.setState({isLoading: false}))
-          .catch((err) => {
-            const { onPlayError } = this.props
-            onPlayError && onPlayError(new Error(err))
-          })
-      })
-
+      this.setState({ isLoading: true }, () => {
+        const audioPromise = this.audio.play();
+        audioPromise
+          .then(() => this.setState({ isLoading: false }))
+          .catch(err => {
+            const { onPlayError } = this.props;
+            onPlayError && onPlayError(new Error(err));
+          });
+      });
     } else if (!this.audio.paused) {
-      this.audio.pause()
+      this.audio.pause();
     }
-  }
+  };
 
   handleClickVolumeButton = () => {
-    const { currentVolume } = this.state
+    const { currentVolume } = this.state;
     if (currentVolume > 0) {
-      this.lastVolume = this.audio.volume
-      this.audio.volume = 0
-      this.updateDisplayVolume(0)
+      this.lastVolume = this.audio.volume;
+      this.audio.volume = 0;
+      this.updateDisplayVolume(0);
     } else {
-      this.audio.volume = this.lastVolume
-      this.updateDisplayVolume(this.lastVolume)
+      this.audio.volume = this.lastVolume;
+      this.updateDisplayVolume(this.lastVolume);
     }
-  }
+  };
 
-  handleVolumnControlMouseDown = (event) => {
-    event.stopPropagation()
-    const isTouch = event.type.startsWith('touch')
-    const { currentVolume, currentVolumePos } = this.getCurrentVolume(event, isTouch)
-    this.audio.volume = currentVolume
-    this.setState({ isDraggingVolume: true, currentVolume, currentVolumePos })
+  handleVolumnControlMouseDown = event => {
+    event.stopPropagation();
+    const isTouch = event.type.startsWith("touch");
+    const { currentVolume, currentVolumePos } = this.getCurrentVolume(
+      event,
+      isTouch
+    );
+    this.audio.volume = currentVolume;
+    this.setState({ isDraggingVolume: true, currentVolume, currentVolumePos });
     if (isTouch) {
-      window.addEventListener('touchmove', this.handleWindowMouseOrTouchMove)
-      window.addEventListener('touchend', this.handleWindowMouseOrTouchUp)
+      window.addEventListener("touchmove", this.handleWindowMouseOrTouchMove);
+      window.addEventListener("touchend", this.handleWindowMouseOrTouchUp);
     } else {
-      window.addEventListener('mousemove', this.handleWindowMouseOrTouchMove)
-      window.addEventListener('mouseup', this.handleWindowMouseOrTouchUp)
+      window.addEventListener("mousemove", this.handleWindowMouseOrTouchMove);
+      window.addEventListener("mouseup", this.handleWindowMouseOrTouchUp);
     }
-  }
+  };
 
-  handleWindowMouseOrTouchMove = (event) => {
-    event.stopPropagation()
+  handleWindowMouseOrTouchMove = event => {
+    event.stopPropagation();
     // Prevent Chrome drag selection bug
-    const windowSelection = window.getSelection()
-    if (windowSelection.type === 'Range') {
-      windowSelection.empty()
+    const windowSelection = window.getSelection();
+    if (windowSelection.type === "Range") {
+      windowSelection.empty();
     }
-    const isTouch = event.type.startsWith('touch')
-    const { isDraggingVolume, isDraggingProgress } = this.state
+    const isTouch = event.type.startsWith("touch");
+    const { isDraggingVolume, isDraggingProgress } = this.state;
     if (isDraggingVolume) {
-      const { currentVolume, currentVolumePos } = this.getCurrentVolume(event, isTouch)
-      this.audio.volume = currentVolume
-      this.setState({ currentVolume, currentVolumePos })
+      const { currentVolume, currentVolumePos } = this.getCurrentVolume(
+        event,
+        isTouch
+      );
+      this.audio.volume = currentVolume;
+      this.setState({ currentVolume, currentVolumePos });
     } else if (isDraggingProgress) {
-      const { currentTime, currentTimePos } = this.getCurrentProgress(event, isTouch)
-      this.timeOnMouseMove = currentTime
-      this.setState({ currentTime, currentTimePos })
+      const { currentTime, currentTimePos } = this.getCurrentProgress(
+        event,
+        isTouch
+      );
+      this.timeOnMouseMove = currentTime;
+      this.setState({ currentTime, currentTimePos });
     }
-  }
+  };
 
-  handleWindowMouseOrTouchUp = (event) => {
-    event.stopPropagation()
-    this.setState((prevState) => {
+  handleWindowMouseOrTouchUp = event => {
+    event.stopPropagation();
+    this.setState(prevState => {
       if (prevState.isDraggingProgress && isFinite(this.timeOnMouseMove)) {
-        this.audio.currentTime = this.timeOnMouseMove
+        this.audio.currentTime = this.timeOnMouseMove;
       }
-      return { isDraggingVolume: false, isDraggingProgress: false }
-    })
-    const isTouch = event.type.startsWith('touch')
+      return { isDraggingVolume: false, isDraggingProgress: false };
+    });
+    const isTouch = event.type.startsWith("touch");
     if (isTouch) {
-      window.removeEventListener('touchmove', this.handleWindowMouseOrTouchMove)
-      window.removeEventListener('touchend', this.handleWindowMouseOrTouchUp)
+      window.removeEventListener(
+        "touchmove",
+        this.handleWindowMouseOrTouchMove
+      );
+      window.removeEventListener("touchend", this.handleWindowMouseOrTouchUp);
     } else {
-      window.removeEventListener('mousemove', this.handleWindowMouseOrTouchMove)
-      window.removeEventListener('mouseup', this.handleWindowMouseOrTouchUp)
+      window.removeEventListener(
+        "mousemove",
+        this.handleWindowMouseOrTouchMove
+      );
+      window.removeEventListener("mouseup", this.handleWindowMouseOrTouchUp);
     }
-  }
+  };
 
   getCurrentVolume = (event, isTouch) => {
-    const volumeBarRect = this.volumeControl.getBoundingClientRect()
-    const relativePos = this.constructor.getPosX(event, isTouch) - volumeBarRect.left
-    let currentVolume
-    let currentVolumePos
+    const volumeBarRect = this.volumeControl.getBoundingClientRect();
+    const relativePos =
+      this.constructor.getPosX(event, isTouch) - volumeBarRect.left;
+    let currentVolume;
+    let currentVolumePos;
 
     if (relativePos < 0) {
-      currentVolume = 0
-      currentVolumePos = '0%'
+      currentVolume = 0;
+      currentVolumePos = "0%";
     } else if (relativePos > volumeBarRect.width) {
-      currentVolume = 1
-      currentVolumePos = `${volumeBarRect.width / volumeBarRect.width * 100}%`
+      currentVolume = 1;
+      currentVolumePos = `${(volumeBarRect.width / volumeBarRect.width) *
+        100}%`;
     } else {
-      currentVolume = relativePos / volumeBarRect.width
-      currentVolumePos = `${(relativePos / volumeBarRect.width) * 100}%`
+      currentVolume = relativePos / volumeBarRect.width;
+      currentVolumePos = `${(relativePos / volumeBarRect.width) * 100}%`;
     }
 
-    return { currentVolume, currentVolumePos }
-  }
+    return { currentVolume, currentVolumePos };
+  };
 
   /* Handle mouse click on progress bar event */
-  handleMouseDownProgressBar = (event) => {
-    event.stopPropagation()
-    const isTouch = event.type.startsWith('touch')
-    const { currentTime, currentTimePos } = this.getCurrentProgress(event, isTouch)
+  handleMouseDownProgressBar = event => {
+    event.stopPropagation();
+    const isTouch = event.type.startsWith("touch");
+    const { currentTime, currentTimePos } = this.getCurrentProgress(
+      event,
+      isTouch
+    );
 
     if (isFinite(currentTime)) {
-      this.timeOnMouseMove = currentTime
-      this.setState({ isDraggingProgress: true, currentTime, currentTimePos })
+      this.timeOnMouseMove = currentTime;
+      this.setState({ isDraggingProgress: true, currentTime, currentTimePos });
       if (isTouch) {
-        window.addEventListener('touchmove', this.handleWindowMouseOrTouchMove)
-        window.addEventListener('touchend', this.handleWindowMouseOrTouchUp)
+        window.addEventListener("touchmove", this.handleWindowMouseOrTouchMove);
+        window.addEventListener("touchend", this.handleWindowMouseOrTouchUp);
       } else {
-        window.addEventListener('mousemove', this.handleWindowMouseOrTouchMove)
-        window.addEventListener('mouseup', this.handleWindowMouseOrTouchUp)
+        window.addEventListener("mousemove", this.handleWindowMouseOrTouchMove);
+        window.addEventListener("mouseup", this.handleWindowMouseOrTouchUp);
       }
     }
-  }
+  };
 
   handleClickLoopButton = () => {
-    this.setState(prevState => ({ isLoopEnabled: !prevState.isLoopEnabled }))
-  }
+    this.setState(prevState => ({ isLoopEnabled: !prevState.isLoopEnabled }));
+  };
 
   handleClickRewind = () => {
-    this.setJumpTime(-this.props.progressJumpStep)
-  }
+    this.setJumpTime(-this.props.progressJumpStep);
+  };
 
   handleClickForward = () => {
-    this.setJumpTime(this.props.progressJumpStep)
-  }
+    this.setJumpTime(this.props.progressJumpStep);
+  };
 
-  setJumpTime = (time) => {
-    const { duration } = this.audio
-    if (!isFinite(duration)) return
-    this.setState((prevState) => {
-      let currentTime = prevState.currentTime + time / 1000
+  setJumpTime = time => {
+    const { duration } = this.audio;
+    if (!isFinite(duration)) return;
+    this.setState(prevState => {
+      if (isNaN(prevState.currentTime)) return;
+      let currentTime = prevState.currentTime + time / 1000;
       if (currentTime < 0) {
-        this.audio.currentTime = 0
-        currentTime = 0
+        this.audio.currentTime = 0;
+        currentTime = 0;
       } else if (currentTime > duration) {
-        this.audio.currentTime = duration
-        currentTime = duration
+        this.audio.currentTime = duration;
+        currentTime = duration;
       } else {
-        this.audio.currentTime = currentTime
+        this.audio.currentTime = currentTime;
       }
-      return { currentTime, currentTimePos: `${currentTime / duration * 100}%` }
-    })
-  }
+      return {
+        currentTime,
+        currentTimePos: `${(currentTime / duration) * 100}%`
+      };
+    });
+  };
 
-  setJumpVolume = (volume) => {
-    let newVolume = this.audio.volume + volume
-    if (newVolume < 0) newVolume = 0
-    else if (newVolume > 1) newVolume = 1
-    this.audio.volume = newVolume
-    this.updateDisplayVolume(newVolume)
-  }
+  setJumpVolume = volume => {
+    let newVolume = this.audio.volume + volume;
+    if (newVolume < 0) newVolume = 0;
+    else if (newVolume > 1) newVolume = 1;
+    this.audio.volume = newVolume;
+    this.updateDisplayVolume(newVolume);
+  };
 
   getCurrentProgress = (event, isTouch) => {
     if (!this.audio.src || !isFinite(this.audio.currentTime)) {
-      return { currentTime: 0, currentTimePos: '0%' }
+      return { currentTime: 0, currentTimePos: "0%" };
     }
 
-    const progressBarRect = this.progressBar.getBoundingClientRect()
-    const maxRelativePos = progressBarRect.width
-    let relativePos = this.constructor.getPosX(event, isTouch) - progressBarRect.left
+    const progressBarRect = this.progressBar.getBoundingClientRect();
+    const maxRelativePos = progressBarRect.width;
+    let relativePos =
+      this.constructor.getPosX(event, isTouch) - progressBarRect.left;
 
     if (relativePos < 0) {
-      relativePos = 0
+      relativePos = 0;
     } else if (relativePos > maxRelativePos) {
-      relativePos = maxRelativePos
+      relativePos = maxRelativePos;
     }
-    let currentTime = (this.audio.duration * relativePos) / maxRelativePos
-    if(this.props.endTime != 0) {
-      currentTime = this.props.startTime + ((this.props.endTime - this.props.startTime) * relativePos/maxRelativePos)
+    let currentTime = (this.audio.duration * relativePos) / maxRelativePos;
+    if (this.props.endTime != 0) {
+      currentTime =
+        this.props.startTime +
+        ((this.props.endTime - this.props.startTime) * relativePos) /
+          maxRelativePos;
     }
-    return { currentTime, currentTimePos: `${(relativePos / maxRelativePos * 100).toFixed(2)}%` }
-  }
+    return {
+      currentTime,
+      currentTimePos: `${((relativePos / maxRelativePos) * 100).toFixed(2)}%`
+    };
+  };
 
-  getDisplayTimeBySeconds = (seconds) => {
+  getDisplayTimeBySeconds = seconds => {
     if (!isFinite(seconds)) {
-      return '00:00'
+      return "00:00";
     }
 
-    const addHeadingZero = this.constructor.addHeadingZero
-    const min = addHeadingZero(Math.floor(seconds / 60))
-    const sec = addHeadingZero(Math.floor(seconds % 60))
-    return `${min}:${sec}`
-  }
+    const addHeadingZero = this.constructor.addHeadingZero;
+    const min = addHeadingZero(Math.floor(seconds / 60));
+    const sec = addHeadingZero(Math.floor(seconds % 60));
+    return `${min}:${sec}`;
+  };
 
   /**
    * Set an interval to call props.onListen every props.listenInterval time period
    */
   setListenTrack = () => {
     if (!this.listenTracker) {
-      const listenInterval = this.props.listenInterval
+      const listenInterval = this.props.listenInterval;
       this.listenTracker = setInterval(() => {
-        this.props.onListen && this.props.onListen(this.audio.currentTime)
-      }, listenInterval)
+        this.props.onListen && this.props.onListen(this.audio.currentTime);
+      }, listenInterval);
     }
-  }
+  };
 
   /**
    * Clear the onListen interval
    */
   clearListenTrack = () => {
     if (this.listenTracker) {
-      clearInterval(this.listenTracker)
-      this.listenTracker = null
+      clearInterval(this.listenTracker);
+      this.listenTracker = null;
     }
-  }
+  };
 
-  handleKeyDown = (e) => {
+  handleKeyDown = e => {
     switch (e.keyCode) {
       case 32: // Space
         if (e.target === this.container || e.target === this.progressBar) {
-          this.togglePlay(e)
+          this.togglePlay(e);
         }
-        break
+        break;
       case 37: // Left arrow
-        this.handleClickRewind()
-        break
+        this.handleClickRewind();
+        break;
       case 39: // Right arrow
-        this.handleClickForward()
-        break
+        this.handleClickForward();
+        break;
       case 38: // Up arrow
-        this.setJumpVolume(this.props.volumeJumpStep)
-        break
+        this.setJumpVolume(this.props.volumeJumpStep);
+        break;
       case 40: // Down arrow
-        this.setJumpVolume(-this.props.volumeJumpStep)
-        break
+        this.setJumpVolume(-this.props.volumeJumpStep);
+        break;
       case 76: // L = Loop
-        this.handleClickLoopButton()
-        break
+        this.handleClickLoopButton();
+        break;
       case 77: // M = Mute
-        this.handleClickVolumeButton()
-        break
+        this.handleClickVolumeButton();
+        break;
     }
-  }
+  };
 
   componentDidMount() {
     // audio player object
-    const audio = this.audio
-    if (!audio) return
+    const audio = this.audio;
+    if (!audio) return;
 
-    this.lastVolume = audio.volume
+    this.lastVolume = audio.volume;
 
     this.intervalId = setInterval(() => {
-      if (!this.audio.paused && !this.state.isDraggingProgress && !!this.audio.duration) {
-        this.updateDisplayTime(this.audio.currentTime)
+      if (
+        !this.audio.paused &&
+        !this.state.isDraggingProgress &&
+        !!this.audio.duration
+      ) {
+        this.updateDisplayTime(this.audio.currentTime);
       }
-    }, this.props.progressUpdateInterval)
+    }, this.props.progressUpdateInterval);
 
-    audio.addEventListener('error', (e) => {
-      this.props.onError && this.props.onError(e)
-    })
+    audio.addEventListener("error", e => {
+      this.props.onError && this.props.onError(e);
+    });
 
     // When enough of the file has downloaded to start playing
-    audio.addEventListener('canplay', (e) => {
+    audio.addEventListener("canplay", e => {
       if (isFinite(this.audio.duration)) {
-        this.setState({ duration: this.audio.duration })
+        this.setState({ duration: this.audio.duration });
       }
-      this.props.onCanPlay && this.props.onCanPlay(e)
-    })
+      this.props.onCanPlay && this.props.onCanPlay(e);
+    });
 
     // When enough of the file has downloaded to play the entire file
-    audio.addEventListener('canplaythrough', (e) => {
-      this.props.onCanPlayThrough && this.props.onCanPlayThrough(e)
-    })
+    audio.addEventListener("canplaythrough", e => {
+      this.props.onCanPlayThrough && this.props.onCanPlayThrough(e);
+    });
 
     // When audio play starts
-    audio.addEventListener('play', (e) => {
-      this.setState({ isPlaying: true })
-      this.setListenTrack()
-      this.props.onPlay && this.props.onPlay(e)
-    })
+    audio.addEventListener("play", e => {
+      this.setState({ isPlaying: true });
+      this.setListenTrack();
+      this.props.onPlay && this.props.onPlay(e);
+    });
 
     // When unloading the audio player (switching to another src)
-    audio.addEventListener('abort', (e) => {
-      this.clearListenTrack()
-      this.props.onAbort && this.props.onAbort(e)
-    })
+    audio.addEventListener("abort", e => {
+      this.clearListenTrack();
+      this.props.onAbort && this.props.onAbort(e);
+    });
 
     // When the file has finished playing to the end
-    audio.addEventListener('ended', (e) => {
-      this.clearListenTrack()
-      this.props.onEnded && this.props.onEnded(e)
-    })
+    audio.addEventListener("ended", e => {
+      this.clearListenTrack();
+      this.props.onEnded && this.props.onEnded(e);
+    });
 
     // When the user pauses playback
-    audio.addEventListener('pause', (e) => {
-      this.clearListenTrack()
-      if (!this.audio) return
-      this.setState({ isPlaying: false })
-      this.props.onPause && this.props.onPause(e)
-    })
+    audio.addEventListener("pause", e => {
+      this.clearListenTrack();
+      if (!this.audio) return;
+      this.setState({ isPlaying: false });
+      this.props.onPause && this.props.onPause(e);
+    });
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { src, autoPlay } = this.props
+    const { src, autoPlay } = this.props;
     if (src !== prevProps.src) {
       this.setState({
         currentTime: this.props.startTime,
-        currentTimePos: '0%',
-      })
-      if(autoPlay || prevState.isPlaying)
-        {
-          this.setState({isLoading: true}, () => {
-            const audioPromise = this.audio.play()
-            audioPromise.then(() => this.setState({isLoading: false}))
-              .catch((err) => {
-                const { onPlayError } = this.props
-                onPlayError && onPlayError(new Error(err))
-              })
-          })
-        }
+        currentTimePos: "0%"
+      });
+      if (autoPlay || prevState.isPlaying) {
+        this.setState({ isLoading: true }, () => {
+          const audioPromise = this.audio.play();
+          audioPromise
+            .then(() => this.setState({ isLoading: false }))
+            .catch(err => {
+              const { onPlayError } = this.props;
+              onPlayError && onPlayError(new Error(err));
+            });
+        });
+      }
     }
   }
 
   componentWillUnmount() {
-    clearInterval(this.intervalId)
+    clearInterval(this.intervalId);
   }
 
   render() {
@@ -476,8 +519,8 @@ class H5AudioPlayer extends Component {
       showJumpControls,
       onClickPrevious,
       onClickNext,
-      children,
-    } = this.props
+      children
+    } = this.props;
     const {
       currentTime,
       currentTimePos,
@@ -487,7 +530,7 @@ class H5AudioPlayer extends Component {
       isPlaying,
       isLoopEnabled,
       isLoading
-    } = this.state
+    } = this.state;
 
     return (
       /* We want the container to catch bubbled events */
@@ -499,7 +542,9 @@ class H5AudioPlayer extends Component {
         aria-label="Audio Player"
         className={`rhap_container ${className}`}
         onKeyDown={this.handleKeyDown}
-        ref={(ref) => { this.container = ref }}
+        ref={ref => {
+          this.container = ref;
+        }}
       >
         {/* User can pass <track> through children */}
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -512,27 +557,29 @@ class H5AudioPlayer extends Component {
           volume={currentVolume}
           autoPlay={autoPlay}
           preload={preload}
-          ref={(ref) => {
-            this.audio = ref
+          ref={ref => {
+            this.audio = ref;
           }}
         >
           {children}
         </audio>
         <div className="rhap_progress-section">
           <div id="rhap_current-time" className="rhap_time rhap_current-time">
-            {this.props.endTime === 0 && this.getDisplayTimeBySeconds(currentTime) || this.getDisplayTimeBySeconds(currentTime - this.props.startTime)}
+            {(this.props.endTime === 0 &&
+              this.getDisplayTimeBySeconds(currentTime)) ||
+              this.getDisplayTimeBySeconds(currentTime - this.props.startTime)}
           </div>
           <div
             className="rhap_progress-container"
-            ref={(ref) => {
-              this.progressBar = ref
+            ref={ref => {
+              this.progressBar = ref;
             }}
             aria-label="Audio Progress Control"
             aria-describedby="rhap_current-time"
             role="progressbar"
             aria-valuemin="0"
             aria-valuemax="100"
-            aria-valuenow={currentTimePos.split('%')[0]}
+            aria-valuenow={currentTimePos.split("%")[0]}
             tabIndex={0}
             onMouseDown={this.handleMouseDownProgressBar}
             onTouchStart={this.handleMouseDownProgressBar}
@@ -545,44 +592,75 @@ class H5AudioPlayer extends Component {
             </div>
           </div>
           <div className="rhap_time rhap_total-time">
-            {this.props.endTime === 0 && this.getDisplayTimeBySeconds(duration) || this.getDisplayTimeBySeconds(this.props.endTime - this.props.startTime)}
+            {(this.props.endTime === 0 &&
+              this.getDisplayTimeBySeconds(duration)) ||
+              this.getDisplayTimeBySeconds(
+                this.props.endTime - this.props.startTime
+              )}
           </div>
         </div>
 
         <div className="rhap_controls-section">
           <div className="rhap_additional-controls">
             {showLoopControl && (
-              <button aria-label={isLoopEnabled ? 'Enable Loop' : 'Disable Loop'} className="rhap_button-clear rhap_repeat-button" onClick={this.handleClickLoopButton}>
+              <button
+                aria-label={isLoopEnabled ? "Enable Loop" : "Disable Loop"}
+                className="rhap_button-clear rhap_repeat-button"
+                onClick={this.handleClickLoopButton}
+              >
                 <Icon icon={isLoopEnabled ? repeat : repeatOff} />
               </button>
             )}
           </div>
           <div className="rhap_main-controls">
             {showSkipControls && (
-              <button aria-label="Previous" className="rhap_button-clear rhap_main-controls-button rhap_skip-button" onClick={onClickPrevious}>
+              <button
+                aria-label="Previous"
+                className="rhap_button-clear rhap_main-controls-button rhap_skip-button"
+                onClick={onClickPrevious}
+              >
                 <Icon icon={skipPrevious} />
               </button>
             )}
             {showJumpControls && (
-              <button aria-label="Rewind" className="rhap_button-clear rhap_main-controls-button rhap_rewind-button" onClick={this.handleClickRewind}>
+              <button
+                aria-label="Rewind"
+                className="rhap_button-clear rhap_main-controls-button rhap_rewind-button"
+                onClick={this.handleClickRewind}
+              >
                 <Icon icon={rewind} />
               </button>
             )}
-            <button aria-label={isPlaying ? 'Pause' : 'Play'} className="rhap_button-clear rhap_main-controls-button rhap_play-pause-button" onClick={this.togglePlay}>
+            <button
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="rhap_button-clear rhap_main-controls-button rhap_play-pause-button"
+              onClick={this.togglePlay}
+            >
               {isPlaying ? (
-                isLoading ? (<WaveSpinner size={15} color='#888' />) : (
-                <Icon icon={pauseCircle} />
-              )) : (
+                isLoading ? (
+                  <WaveSpinner size={15} color="#888" />
+                ) : (
+                  <Icon icon={pauseCircle} />
+                )
+              ) : (
                 <Icon icon={playCircle} />
               )}
             </button>
             {showJumpControls && (
-              <button aria-label="Forward" className="rhap_button-clear rhap_main-controls-button rhap_forward-button" onClick={this.handleClickForward}>
+              <button
+                aria-label="Forward"
+                className="rhap_button-clear rhap_main-controls-button rhap_forward-button"
+                onClick={this.handleClickForward}
+              >
                 <Icon icon={fastForward} />
               </button>
             )}
             {showSkipControls && (
-              <button aria-label="Skip" className="rhap_button-clear rhap_main-controls-button rhap_skip-button" onClick={onClickNext}>
+              <button
+                aria-label="Skip"
+                className="rhap_button-clear rhap_main-controls-button rhap_skip-button"
+                onClick={onClickNext}
+              >
                 <Icon icon={skipNext} />
               </button>
             )}
@@ -590,11 +668,17 @@ class H5AudioPlayer extends Component {
           <div className="rhap_volume-controls">
             {showVolumeControl && (
               <div className="rhap_volume-container">
-                <button aria-label={currentVolume ? 'Mute' : 'Unmute'} onClick={this.handleClickVolumeButton} className="rhap_button-clear rhap_volume-button">
+                <button
+                  aria-label={currentVolume ? "Mute" : "Unmute"}
+                  onClick={this.handleClickVolumeButton}
+                  className="rhap_button-clear rhap_volume-button"
+                >
                   <Icon icon={currentVolume ? volumeHigh : volumeMute} />
                 </button>
                 <div
-                  ref={(ref) => { this.volumeControl = ref }}
+                  ref={ref => {
+                    this.volumeControl = ref;
+                  }}
                   onMouseDown={this.handleVolumnControlMouseDown}
                   onTouchStart={this.handleVolumnControlMouseDown}
                   role="progressbar"
@@ -617,8 +701,8 @@ class H5AudioPlayer extends Component {
           </div>
         </div>
       </div>
-    )
+    );
   }
 }
 
-export default H5AudioPlayer
+export default H5AudioPlayer;
